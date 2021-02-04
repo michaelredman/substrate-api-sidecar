@@ -1,4 +1,4 @@
-import type { AnyNumber, Codec, IExtrinsicEra, Signer } from '@polkadot/types/types';
+import type { AnyNumber, Codec, IExtrinsicEra } from '@polkadot/types/types';
 import type { SignerOptions } from '@polkadot/api/submittable/types';
 
 export interface Signature {
@@ -10,7 +10,6 @@ export interface SignatureOptions {
     blockHash?: Uint8Array | string;
     era?: IExtrinsicEra | number;
     nonce?: AnyNumber | Codec;
-    signer?: Signer;
     tip?: AnyNumber;
 }
 
