@@ -17,6 +17,7 @@ interface TransactionSendOfflineSession {
     expiryTime: number; // what time in ms is this to be cleared
 }
 
+// XXX this is a hack job, if we could serialize/deserialize options it would be better
 interface TransactionSendOfflineCache {
     [key: string]: TransactionSendOfflineSession;
 }
