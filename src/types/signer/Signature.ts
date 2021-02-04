@@ -8,7 +8,7 @@ export interface Signature {
 
 export interface SignatureOptions {
     blockHash?: Uint8Array | string;
-    era?: IExtrinsicEra | number;
+    era?: string | number;
     nonce?: AnyNumber | Codec;
     tip?: AnyNumber;
 }
@@ -21,16 +21,16 @@ export function deserialize(signerOptions: SignatureOptions): Partial<SignerOpti
     return {
         blockHash: signerOptions.blockHash,
         nonce: signerOptions.nonce,
-        era: signerOptions.era,
+        era: 0,
         tip: 0
     }
 }
 
 export function serialize(signerOptions: Partial<SignerOptions>): SignatureOptions {
     return {
-        blockHash: signerOptions.blockHash,
-        nonce: signerOptions.nonce,
-        era: signerOptions.era,
+        blockHash: signerOptions.blockHash?.toString(),
+        nonce: signerOptions.nonce ? (signerOptions.nonce as Codec).toHex() : 0,
+        era: signerOptions.era ? (signerOptions.era as IExtrinsicEra).toHex() : 0,
         tip: 0
     }
 }

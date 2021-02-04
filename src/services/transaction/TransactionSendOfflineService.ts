@@ -43,12 +43,15 @@ export class TransactionSendOfflineService extends AbstractService {
         try {
             const [section, method] = target.split('.');
             const signer: OfflineSigner = new OfflineSigner(signature);
-            const session: string = blake2AsHex(JSON.stringify({
-                account: account,
-                target: target,
-                params: params,
-                options: signature.options
-            }))
+            const session: string = blake2AsHex(JSON.stringify([
+                account,
+                target,
+                params,
+                signature.options.blockHash,
+                signature.options.era,
+                signature.options.nonce,
+                signature.options.tip
+            ]))
 
             const signerOptions: Partial<SignerOptions> = sessions[session] ? sessions[session].options : {};
             const transaction: any = api.tx[section][method](...params);
@@ -109,12 +112,15 @@ export class TransactionSendOfflineService extends AbstractService {
                 }
             }
 
-            const session: string = blake2AsHex(JSON.stringify({
-                account: account,
-                target: target,
-                params: params,
-                options: options
-            }))
+            const session: string = blake2AsHex(JSON.stringify([
+                account,
+                target,
+                params,
+                options.blockHash,
+                options.era,
+                options.nonce,
+                options.tip
+            ]))
 
             sessions[session] = {
                 options: signerOptions,
