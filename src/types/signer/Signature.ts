@@ -1,38 +1,15 @@
-import type { AnyNumber, Codec, IExtrinsicEra } from '@polkadot/types/types';
-import type { SignerOptions } from '@polkadot/api/submittable/types';
+import { blake2AsHex } from '@polkadot/util-crypto';
 
 export interface Signature {
     type: "ed25519" | "sr25519" | "ecdsa";
     value: string;
 }
-
-export interface SignatureOptions {
-    blockHash?: Uint8Array | string;
-    era?: string | number;
-    nonce?: AnyNumber | Codec;
-    tip?: AnyNumber;
-}
-
 export interface SignedPayload extends Signature {
-    options: SignatureOptions;
+    session: string;
 }
 
-export function deserialize(signerOptions: SignatureOptions): Partial<SignerOptions> {
-    return {
-        blockHash: signerOptions.blockHash,
-        nonce: signerOptions.nonce,
-        era: 0,
-        tip: 0
-    }
-}
-
-export function serialize(signerOptions: Partial<SignerOptions>): SignatureOptions {
-    return {
-        blockHash: signerOptions.blockHash?.toString(),
-        nonce: signerOptions.nonce ? (signerOptions.nonce as Codec).toHex() : 0,
-        era: signerOptions.era ? (signerOptions.era as IExtrinsicEra).toHex() : 0,
-        tip: 0
-    }
+export function serialize(...value: any): string {
+    return blake2AsHex(JSON.stringify(value).replace('"', ''));
 }
 
 export function encode(signature: Signature): string {

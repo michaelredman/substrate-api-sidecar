@@ -1,6 +1,5 @@
 import type { SignerOptions, } from '@polkadot/api/submittable/types';
 import { ApiPromise } from '@polkadot/api';
-import { blake2AsHex } from '@polkadot/util-crypto';
 import {
     ISendOfflineResult,
     SendOfflinePhase
@@ -8,7 +7,6 @@ import {
 import {
     OfflineSigner,
     serialize,
-    SignatureOptions,
     SignedPayload
 } from '../../types/signer';
 import { AbstractService } from '../AbstractService';
@@ -16,7 +14,7 @@ import { extractCauseAndStack } from './extractCauseAndStack';
 
 interface TransactionSendOfflineSession {
     options: Partial<SignerOptions>
-    expiry: number; // what time in ms is this to be cleared
+    expiryTime: number; // what time in ms is this to be cleared
 }
 
 interface TransactionSendOfflineCache {
@@ -43,23 +41,15 @@ export class TransactionSendOfflineService extends AbstractService {
         try {
             const [section, method] = target.split('.');
             const signer: OfflineSigner = new OfflineSigner(signature);
-            const session: string = blake2AsHex(JSON.stringify([
-                account,
-                target,
-                params,
-                signature.options.blockHash,
-                signature.options.era,
-                signature.options.nonce,
-                signature.options.tip
-            ]))
-
-            const signerOptions: Partial<SignerOptions> = sessions[session] ? sessions[session].options : {};
+            const signerOptions: Partial<SignerOptions> = sessions[signature.session] ? sessions[signature.session].options : {};
             const transaction: any = api.tx[section][method](...params);
 
             await transaction.signAsync(account, {
                 ...signerOptions,
                 signer
             });
+
+            delete sessions[signature.session]; // its been done
 
             return {
                 phase: SendOfflinePhase.TransactionReady,
@@ -101,36 +91,34 @@ export class TransactionSendOfflineService extends AbstractService {
 
             await transaction.signAsync(account, signerOptions);
 
-            const time: number = new Date().getTime();
-            const options: SignatureOptions = serialize(signerOptions);
+            const currentTime: number = new Date().getTime();
+            const currentKey: string = serialize(
+                account,
+                target,
+                params,
+                signerOptions.blockHash,
+                signerOptions.era,
+                signerOptions.nonce,
+                signerOptions.tip);
 
-            for (const session in sessions) {
-                if (sessions.hasOwnProperty(session)) {
-                    if (sessions[session].expiry < time) {
-                        delete sessions[session]; // do a lazy clear of the cache
+            for (const sessionKey in sessions) {
+                if (sessions.hasOwnProperty(sessionKey)) {
+                    if (sessions[sessionKey].expiryTime < currentTime) {
+                        delete sessions[sessionKey]; // do a lazy clear of the cache
                     }
                 }
             }
 
-            const session: string = blake2AsHex(JSON.stringify([
-                account,
-                target,
-                params,
-                options.blockHash,
-                options.era,
-                options.nonce,
-                options.tip
-            ]))
-
-            sessions[session] = {
+            sessions[currentKey] = {
                 options: signerOptions,
-                expiry: time + (24 * 60 * 60 * 1000) // 1 day
+                expiryTime: currentTime + (24 * 60 * 60 * 1000) // 1 day
             }
+
             return {
                 phase: SendOfflinePhase.SignatureRequired,
                 payload: {
                     unsigned: signer.unsignedPayload(),
-                    options: options // we want to dezerialize later..
+                    session: currentKey // we want to reference later..
                 }
             }
         } catch (err) {
@@ -144,5 +132,7 @@ export class TransactionSendOfflineService extends AbstractService {
         }
     }
 }
+
+
 
 

@@ -1,5 +1,4 @@
 
-import { SignatureOptions } from '../signer';
 
 export enum SendOfflinePhase {
 	SignatureRequired = 'SignatureRequired',
@@ -8,7 +7,7 @@ export enum SendOfflinePhase {
 
 export interface UnsignedPayload {
 	unsigned: string;
-	options: SignatureOptions;
+	session: string;
 }
 
 export interface ISendOfflineResult {
